@@ -44,10 +44,12 @@ jobs:
       - name: Definir nome da imagem com base no ambiente
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "IMAGE_NAME=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:latest" >> $GITHUB_ENV
+            export IMAGE_NAME="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:latest"
           else
-            echo "IMAGE_NAME=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:staging-${{ github.sha }}" >> $GITHUB_ENV
+            export IMAGE_NAME="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:staging-${{ github.sha }}"
           fi
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo "Usando a imagem: $IMAGE_NAME"
 
       - name: Build da Imagem Docker
         run: |
