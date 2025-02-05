@@ -41,7 +41,7 @@ jobs:
       - name: Configurar Docker para Artifact Registry
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
-            - name: Definir nome da imagem com base no ambiente
+      - name: Definir nome da imagem com base no ambiente
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "IMAGE_NAME=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:latest" >> $GITHUB_ENV
