@@ -2,12 +2,29 @@ name: CI/CD para Cloud Run
 
 on:
   push:
-    branches: [ main ]
+    branches: [ staging, main ]
+  pull_request:
+    branches: [ staging, main ]
 
 jobs:
+  test:
+    name: Rodar Testes Automatizados
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v3
+
+      - name: Configurar Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Rodar Testes
+        run: echo "Nenhum teste necessário para app estático"
+
   deploy:
     name: Deploy para Cloud Run
     runs-on: ubuntu-latest
+    needs: test  # Só executa se os testes passarem
 
     steps:
       - name: Checkout do Código
@@ -26,16 +43,26 @@ jobs:
 
       - name: Build da Imagem Docker
         run: |
-          docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web/meu-servidor-web:${{ github.sha }} .
+          docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }} .
 
       - name: Push da Imagem para o Artifact Registry
         run: |
-          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web/meu-servidor-web:${{ github.sha }}
+          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }}
 
-      - name: Deploy para o Cloud Run
+      - name: Deploy para o Cloud Run (Staging)
+        if: github.ref == 'refs/heads/staging'
+        run: |
+          gcloud run deploy meu-servidor-web-staging \
+            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }} \
+            --region us-central1 \
+            --platform managed \
+            --allow-unauthenticated
+
+      - name: Deploy para o Cloud Run (Produção)
+        if: github.ref == 'refs/heads/main'
         run: |
           gcloud run deploy meu-servidor-web \
-            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web/meu-servidor-web:${{ github.sha }} \
+            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }} \
             --region us-central1 \
             --platform managed \
             --allow-unauthenticated
