@@ -44,47 +44,39 @@ jobs:
       - name: Definir nome da imagem com base no ambiente
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            IMAGE_NAME="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:latest"
+            echo "IMAGE_NAME=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:latest" >> $GITHUB_ENV
           else
-            IMAGE_NAME="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:staging-${{ github.sha }}"
+            echo "IMAGE_NAME=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:staging-${{ github.sha }}" >> $GITHUB_ENV
           fi
-          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
-          echo "Imagem definida: $IMAGE_NAME"
 
       - name: Verificar nome da imagem antes do build
-        run: echo "Imagem que será usada no build: $IMAGE_NAME"
+        run: echo "Imagem que será usada no build: ${{ env.IMAGE_NAME }}"
 
       - name: Build da Imagem Docker
         run: |
-          docker build -t $IMAGE_NAME .
-        env:
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          docker build -t ${{ env.IMAGE_NAME }} .
+
+      - name: Verificar nome da imagem antes do push
+        run: echo "Imagem que será enviada: ${{ env.IMAGE_NAME }}"
 
       - name: Push da Imagem para o Artifact Registry
         run: |
-          echo "Enviando imagem: $IMAGE_NAME"
-          docker push $IMAGE_NAME
-        env:
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          docker push ${{ env.IMAGE_NAME }}
 
       - name: Deploy para o Cloud Run (Staging)
         if: github.ref == 'refs/heads/staging'
         run: |
           gcloud run deploy meu-servidor-web-staging \
-            --image $IMAGE_NAME \
+            --image ${{ env.IMAGE_NAME }} \
             --region us-central1 \
             --platform managed \
             --allow-unauthenticated
-        env:
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
 
       - name: Deploy para o Cloud Run (Produção)
         if: github.ref == 'refs/heads/main'
         run: |
           gcloud run deploy meu-servidor-web \
-            --image $IMAGE_NAME \
+            --image ${{ env.IMAGE_NAME }} \
             --region us-central1 \
             --platform managed \
             --allow-unauthenticated
-        env:
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
