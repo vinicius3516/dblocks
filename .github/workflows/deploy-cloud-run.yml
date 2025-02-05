@@ -2,29 +2,12 @@ name: CI/CD para Cloud Run
 
 on:
   push:
-    branches: [ staging, main ]
-  pull_request:
-    branches: [ staging, main ]
+    branches: [ master ]
 
 jobs:
-  test:
-    name: Rodar Testes Automatizados
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout do Código
-        uses: actions/checkout@v3
-
-      - name: Configurar Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Rodar Testes
-        run: echo "Nenhum teste necessário para app estático"
-
   deploy:
     name: Deploy para Cloud Run
     runs-on: ubuntu-latest
-    needs: test  # Só executa se os testes passarem
 
     steps:
       - name: Checkout do Código
@@ -41,42 +24,18 @@ jobs:
       - name: Configurar Docker para Artifact Registry
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
-      - name: Definir nome da imagem com base no ambiente
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            IMAGE_NAME="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:latest"
-          else
-            IMAGE_NAME="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:staging-${{ github.sha }}"
-          fi
-          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Verificar nome da imagem antes do build
-        run: echo "Imagem que será usada no build: ${{ env.IMAGE_NAME }}"
-
       - name: Build da Imagem Docker
-        run: docker build -t ${{ env.IMAGE_NAME }} .
-
-      - name: Verificar nome da imagem antes do push
-        run: echo "Imagem que será enviada: ${{ env.IMAGE_NAME }}"
+        run: |
+          docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web/meu-servidor-web:${{ github.sha }} .
 
       - name: Push da Imagem para o Artifact Registry
-        run: docker push ${{ env.IMAGE_NAME }}
-
-      - name: Deploy para o Cloud Run (Staging)
-        if: github.ref == 'refs/heads/staging'
         run: |
-          gcloud run deploy meu-servidor-web-staging \
-            --image ${{ env.IMAGE_NAME }} \
-            --region us-central1 \
-            --platform managed \
-            --allow-unauthenticated
+          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web/meu-servidor-web:${{ github.sha }}
 
-      - name: Deploy para o Cloud Run (Produção)
-        if: github.ref == 'refs/heads/main'
+      - name: Deploy para o Cloud Run
         run: |
           gcloud run deploy meu-servidor-web \
-            --image ${{ env.IMAGE_NAME }} \
+            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web/meu-servidor-web:${{ github.sha }} \
             --region us-central1 \
             --platform managed \
             --allow-unauthenticated
