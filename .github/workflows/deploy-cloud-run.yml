@@ -41,19 +41,27 @@ jobs:
       - name: Configurar Docker para Artifact Registry
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
+      - name: Definir nome da imagem com base no ambiente
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "IMAGE_NAME=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-repo/meu-servidor-web:latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_NAME=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-repo/meu-servidor-web-staging:${{ github.sha }}" >> $GITHUB_ENV
+          fi
+
       - name: Build da Imagem Docker
         run: |
-          docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }} .
+          docker build -t $IMAGE_NAME .
 
       - name: Push da Imagem para o Artifact Registry
         run: |
-          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }}
+          docker push $IMAGE_NAME
 
       - name: Deploy para o Cloud Run (Staging)
         if: github.ref == 'refs/heads/staging'
         run: |
           gcloud run deploy meu-servidor-web-staging \
-            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }} \
+            --image $IMAGE_NAME \
             --region us-central1 \
             --platform managed \
             --allow-unauthenticated
@@ -62,7 +70,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           gcloud run deploy meu-servidor-web \
-            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }} \
+            --image $IMAGE_NAME \
             --region us-central1 \
             --platform managed \
             --allow-unauthenticated
