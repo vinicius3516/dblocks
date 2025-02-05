@@ -2,7 +2,7 @@ name: CI/CD para Cloud Run
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   deploy:
@@ -21,21 +21,21 @@ jobs:
       - name: Configurar Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configurar Docker
-        run: gcloud auth configure-docker
+      - name: Configurar Docker para Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
       - name: Build da Imagem Docker
         run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }} .
+          docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web/meu-servidor-web:${{ github.sha }} .
 
-      - name: Push da Imagem para o Container Registry
+      - name: Push da Imagem para o Artifact Registry
         run: |
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }}
+          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web/meu-servidor-web:${{ github.sha }}
 
       - name: Deploy para o Cloud Run
         run: |
           gcloud run deploy meu-servidor-web \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:${{ github.sha }} \
+            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web/meu-servidor-web:${{ github.sha }} \
             --region us-central1 \
             --platform managed \
             --allow-unauthenticated
