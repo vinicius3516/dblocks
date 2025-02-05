@@ -44,14 +44,17 @@ jobs:
       - name: Definir nome da imagem com base no ambiente
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "IMAGE_NAME=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:latest" >> $GITHUB_ENV
+            IMAGE_NAME="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:latest"
           else
-            echo "IMAGE_NAME=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:staging-${{ github.sha }}" >> $GITHUB_ENV
+            IMAGE_NAME="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/meu-servidor-web:staging-${{ github.sha }}"
           fi
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo "Nome da imagem definida como: $IMAGE_NAME"
 
-      - name: Verificar nome da imagem
-        run: |
-          echo "Imagem que será usada: $IMAGE_NAME"
+      - name: Verificar nome da imagem antes do build
+        run: echo "Nome da imagem que será usada no build: $IMAGE_NAME"
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
 
       - name: Build da Imagem Docker
         run: |
@@ -59,9 +62,13 @@ jobs:
         env:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
 
+      - name: Verificar nome da imagem antes do push
+        run: echo "Nome da imagem que será enviada: $IMAGE_NAME"
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+
       - name: Push da Imagem para o Artifact Registry
         run: |
-          echo "Enviando imagem: $IMAGE_NAME"
           docker push $IMAGE_NAME
         env:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
