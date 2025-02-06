@@ -9,7 +9,7 @@
 			"toolbox":"AmadoBoard.xml",
 			"pinout": [
 				["D2 / LED PRETO", "2"],
-				["D4 / BUZZER", "4"],
+				["D4 / BUZINA", "4"],
 				["D5 / CS", "5"],
 				["D12 / PWM J1", "12"],
 				["D13 / DIR1 J1", "13"],
