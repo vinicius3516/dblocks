@@ -2,7 +2,7 @@ name: CI/CD para Cloud Run
 
 on:
   pull_request:
-    branches: [ staging, master ]
+    branches: [ staging, main ]
     types: [closed]  # Só roda quando um PR é mergeado
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
 
       - name: Definir Variáveis do Ambiente
         run: |
-          if [[ "${{ github.base_ref }}" == "master" ]]; then
+          if [[ "${{ github.base_ref }}" == "main" ]]; then
             echo "ENV=prod" >> $GITHUB_ENV
             echo "SERVICE_NAME=meu-servidor-web" >> $GITHUB_ENV
           else
