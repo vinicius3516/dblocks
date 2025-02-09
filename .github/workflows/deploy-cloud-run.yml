@@ -2,12 +2,12 @@ name: CI/CD para Cloud Run
 
 on:
   pull_request:
-    branches: [ staging, main ]
+    branches: [ staging, master ]
     types: [closed]  # Só roda quando um PR é mergeado
 
 jobs:
   deploy:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true  # Garante que só roda se o PR foi mergeado
     name: Deploy para Cloud Run
     runs-on: ubuntu-latest
 
@@ -15,10 +15,10 @@ jobs:
       - name: Checkout do Código
         uses: actions/checkout@v3
         with:
-          submodules: true  # Garante que submódulos sejam clonados
+          submodules: 'recursive'  # Garante que submódulos sejam clonados recursivamente
 
-      - name: Atualizar Submódulos Específicos
-        run: git submodule update --init ui/freeboard
+      - name: Atualizar Submódulos
+        run: git submodule update --init --recursive ui/freeboard
 
       - name: Autenticação no GCP
         uses: google-github-actions/auth@v2
@@ -33,7 +33,7 @@ jobs:
 
       - name: Definir Variáveis do Ambiente
         run: |
-          if [[ "${{ github.base_ref }}" == "main" ]]; then
+          if [[ "${{ github.base_ref }}" == "master" ]]; then
             echo "ENV=prod" >> $GITHUB_ENV
             echo "SERVICE_NAME=meu-servidor-web" >> $GITHUB_ENV
           else
